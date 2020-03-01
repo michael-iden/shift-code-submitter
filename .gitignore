@@ -30,9 +30,10 @@ build/Release
 node_modules
 
 # IDE
-**/.idea
+.idea
 
 # OS
 .DS_Store
 .tmp
 .python-version
+__pycache__/
