@@ -5,7 +5,7 @@ provider:
   stage: dev
   runtime: python37
   region: us-central1
-  project: shift-code-feed-reader
+  project: ${env:PROJECT_ID}
   # The GCF credentials can be a little tricky to set up. Luckily we've documented this for you here:
   # https://serverless.com/framework/docs/providers/google/guide/credentials/
   #
@@ -28,3 +28,6 @@ functions:
     handler: get_codes
     events:
       - http: path
+    environment:
+      SLACK_TOKEN: ${env:SLACK_TOKEN}
+      GCLOUD_BUCKET_NAME: ${env:GCLOUD_BUCKET_NAME}
