@@ -1,22 +1,30 @@
-from src import orcicorn_client, slack_client, shift_code_client, user_builder
+from typing import List
+
+from src import orcicorn_client, shift_code_client, user_builder
 from src.gcloud_storage import GCloudStorage
+from src.slack_client import SlackClient
+from src.user_builder import User
 
-storage_class = GCloudStorage()
 
+def redeem_codes(users: List[User], codes: List[str]):
+    slack_client = SlackClient()
+    for code in codes:
+        print(code)
+        slack_client.send_code_to_slack(code)
+        submission_status = {
+            'success': [],
+            'failure': []
+        }
 
-def redeem_code(shift_code):
-    successful_submissions = []
-    failed_submissions = []
+        for user in users:
+            try:
+                shift_code_client.ShiftCodeClient(user, code).submit_shift_code()
+                submission_status['success'].append(user.name)
+            except Exception as e:
+                print(e)
+                submission_status['failure'].append(user.name)
 
-    for user in user_builder.build_users(storage_class):
-        try:
-            shift_code_client.ShiftCodeClient(user, shift_code).submit_shift_code()
-            successful_submissions.append(user.name)
-        except Exception as e:
-            print(e)
-            failed_submissions.append(user.name)
-
-    slack_client.send_redemptions_to_slack(successful_submissions, failed_submissions)
+        slack_client.send_redemptions_to_slack(submission_status['success'], submission_status['failure'])
 
 
 def get_codes(request):
@@ -28,12 +36,12 @@ def get_codes(request):
         Response object using
         `make_response <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>`.
     """
+    storage_class = GCloudStorage()
 
     codes = orcicorn_client.get_new_codes(storage_class)
-    for code in codes:
-        print(code)
-        slack_client.send_code_to_slack(code)
-        redeem_code(code)
+    if codes:
+        users = user_builder.build_users(storage_class)
+        redeem_codes(users, codes)
 
     return f'Found {len(codes)} code to submit. Check slack and shift for results!'
 
